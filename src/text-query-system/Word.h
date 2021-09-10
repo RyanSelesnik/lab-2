@@ -25,6 +25,7 @@ public:
 
 private:
 	string word_;
+	static const auto MIN_SIZE_FOR_QUERY_ = 3;
 };
 
 #endif
