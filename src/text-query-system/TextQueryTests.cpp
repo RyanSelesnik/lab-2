@@ -132,33 +132,113 @@ TEST_CASE("Word which is not queryable cannot be found") {
 
 // ------------- Tests for Paragraph ----------------
 
-//TEST_CASE("Word cannot be found in empty Paragraph") {
-//}
+TEST_CASE("Word cannot be found in empty Paragraph") {
+	auto paragraph = Paragraph();
+	tuple<bool, vector<int>> temp = paragraph.contains(Word{ "longer" });
+	bool found = std::get<0>(temp);
+	vector<int> lines_containing_word = std::get<1>(temp);
+	CHECK_FALSE(std::get<0>(paragraph.contains(Word{ "hello" })));
+	CHECK(lines_containing_word.size() == 0);
+}
+
+TEST_CASE("Word not present in Paragraph cannot be found") {
+	auto paragraph = Paragraph();
+	// single-line paragraph
+	paragraph.addLine(Line{ "I have always wished for my computer to be as easy to use as my telephone; my wish has come true because I can no longer figure out how to use my telephone." });
+	tuple<bool, vector<int>> temp = paragraph.contains(Word{ "hello" });
+	bool found = std::get<0>(temp);
+	vector<int> lines_containing_word = std::get<1>(temp);
+	CHECK_FALSE(found);
+	CHECK(lines_containing_word.size() == 0);
+
+	// multi-line paragraph
+	paragraph.addLine(Line{ "Any fool can write code that a computer can understand. Good programmers write code that humans can understand." });
+	paragraph.addLine(Line{ "How can you tell if a person is a programmer? They use nested parentheses in normal writing (at least I do (sometimes))." });
+	temp = paragraph.contains(Word{ "hello" });
+	found = std::get<0>(temp);
+	lines_containing_word = std::get<1>(temp);
+	CHECK_FALSE(found);
+	CHECK(lines_containing_word.size() == 0);
+}
+
+TEST_CASE("Line number of a Word appearing once in Paragraph is returned") {
+	auto paragraph = Paragraph();
+	paragraph.addLine(Line{ "I have always wished for my computer to be as easy to use as my telephone; my wish has come true because I can no longer figure out how to use my telephone." });
+	SUBCASE("Single line paragraph") {
+		tuple<bool, vector<int>> temp = paragraph.contains(Word{ "longer" });
+		bool found = std::get<0>(temp);
+		vector<int> lines_containing_word = std::get<1>(temp);
+		CHECK(found);
+		CHECK(lines_containing_word.size() == 1);
+		CHECK(lines_containing_word[0] == 1);
+	}
+	// multi-line paragraph
+	paragraph.addLine(Line{ "Any fool can write code that a computer can understand. Good programmers write code that humans can understand." });
+	paragraph.addLine(Line{ "How can you tell if a person is a programmer? They use nested parentheses in normal writing (at least I do (sometimes))." });
+	SUBCASE("Multi-line paragraph: word in 1st line") {
+		tuple<bool, vector<int>> temp = paragraph.contains(Word{ "longer" });
+		bool found = std::get<0>(temp);
+		vector<int> lines_containing_word = std::get<1>(temp);
+		CHECK(found);
+		CHECK(lines_containing_word.size() == 1);
+		CHECK(lines_containing_word[0] == 1);
+	}
+	SUBCASE("Multi-line paragraph: word in 2nd line") {
+		tuple<bool, vector<int>> temp = paragraph.contains(Word{ "good" });
+		bool found = std::get<0>(temp);
+		vector<int> lines_containing_word = std::get<1>(temp);
+		CHECK(found);
+		CHECK(lines_containing_word.size() == 1);
+		CHECK(lines_containing_word[0] == 2);
+	}
+	SUBCASE("Multi-line paragraph: word in 3rd line") {
+		tuple<bool, vector<int>> temp = paragraph.contains(Word{ "parentheses" });
+		bool found = std::get<0>(temp);
+		vector<int> lines_containing_word = std::get<1>(temp);
+		CHECK(found);
+		CHECK(lines_containing_word.size() == 1);
+		CHECK(lines_containing_word[0] == 3);
+	}
+}
+
+TEST_CASE("Line numbers of a Word appearing in multiple Lines of a Paragraph is returned") {
+	auto paragraph = Paragraph();
+	paragraph.addLine(Line{ "I have always wished for my computer to be as easy to use as my telephone; my wish has come true because I can no longer figure out how to use my telephone." });
+	paragraph.addLine(Line{ "How can you tell if a person is a programmer? They use nested parentheses in normal writing (at least I do (sometimes))." });
+	paragraph.addLine(Line{ "Any fool can write code that a computer can understand. Good programmers write code that humans can understand." });
+	tuple<bool, vector<int>> temp = paragraph.contains(Word{ "computer" });
+	bool found = std::get<0>(temp);
+	vector<int> lines_containing_word = std::get<1>(temp);
+	CHECK(found);
+	CHECK(lines_containing_word.size() == 2);
+	CHECK(lines_containing_word[0] == 1);
+	CHECK(lines_containing_word[1] == 3);
+}
 //
-//TEST_CASE("Word not present in Paragraph cannot be found") {
-//}
+TEST_CASE("Line numbers returned account for an empty Line") {
+// If the first line of the paragraph is empty, and the word being searched for
+// is on the second line, the vector returned should be: [2]
+	auto paragraph = Paragraph();
+	paragraph.addLine(Line{ "" });
+	paragraph.addLine(Line{ "I have always wished for my computer to be as easy to use as my telephone; my wish has come true because I can no longer figure out how to use my telephone." });
+	tuple<bool, vector<int>> temp = paragraph.contains(Word{ "computer" });
+	bool found = std::get<0>(temp);
+	vector<int> lines_containing_word = std::get<1>(temp);
+	CHECK(found);
+	CHECK(lines_containing_word.size() == 1);
+	CHECK(lines_containing_word[0] == 2);
+}
 //
-//TEST_CASE("Line number of a Word appearing once in Paragraph is returned") {
-//}
-//
-//TEST_CASE("Line numbers of a Word appearing in multiple Lines of a Paragraph is returned") {
-//}
-//
-//TEST_CASE("Line numbers returned account for an empty Line") {
-//// If the first line of the paragraph is empty, and the word being searched for
-//// is on the second line, the vector returned should be: [2]
-//}
-//
-//// Integration test - both Paragraph and File Reader are tested together
-//TEST_CASE("File can be read into Paragraph and successfully searched") {
-//	// make sure that alice.txt is in the right location for this to work!
-//	// it must be in the same directory as the executable
-//	auto filereader = FileReader{"alice.txt"};
-//	auto paragraph = Paragraph{};
-//	filereader.readFileInto(paragraph);
-//
-//	auto[found, line_numbers] = paragraph.contains(Word{"Daddy"});
-//
-//	CHECK(found);
-//	CHECK(vector<int>{1,4,6} == line_numbers);
-//}
+// Integration test - both Paragraph and File Reader are tested together
+TEST_CASE("File can be read into Paragraph and successfully searched") {
+	// make sure that alice.txt is in the right location for this to work!
+	// it must be in the same directory as the executable
+	auto filereader = FileReader{"alice.txt"};
+	auto paragraph = Paragraph{};
+	filereader.readFileInto(paragraph);
+
+	auto[found, line_numbers] = paragraph.contains(Word{"Daddy"});
+
+	CHECK(found);
+	CHECK(vector<int>{1,4,6} == line_numbers);
+}
