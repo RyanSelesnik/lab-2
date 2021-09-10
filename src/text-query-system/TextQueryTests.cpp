@@ -33,34 +33,59 @@ TEST_CASE("Non-identical Words are not equal") {
 
 // --------
 
-//TEST_CASE("Case is ignored when comparing Words") {
-//	CHECK(Word{LOWERCASE} == Word{UPPERCASE});
-//}
+TEST_CASE("Case is ignored when comparing Words") {
+CHECK(Word{LOWERCASE} == Word{UPPERCASE});
+}
 //
-//TEST_CASE("Punctuation is ignored when comparing Words") {
-//	auto word_with_punct = Word{PUNCTUATION + "hel" + PUNCTUATION + "lo" + PUNCTUATION};
-//	auto word_without_punct = Word{"hello"};
-//	CHECK(word_without_punct == word_with_punct);
-//}
+TEST_CASE("Punctuation is ignored when comparing Words") {
+    auto word_with_punct = Word{PUNCTUATION + "hel" + PUNCTUATION + "lo" + PUNCTUATION};
+    auto word_without_punct = Word{"hello"};
+    CHECK(word_without_punct == word_with_punct);
+}
+
+TEST_CASE("Word cannot consist solely of punctuation") {
+	CHECK_THROWS_AS(Word{"!@#$%"}, WordContainsNoLetters);
+}
 //
-//TEST_CASE("Word cannot consist solely of punctuation") {
-//	CHECK_THROWS_AS(Word{"!@#$%"}, WordContainsNoLetters);
-//}
+TEST_CASE("Word cannot contain a space") {
+    CHECK_THROWS_AS(Word{"hello there"}, WordContainsSpace);
+}
+
+TEST_CASE("Word is queryable if greater than or equal to a specific size") {
+	auto test_string = ""s;
+	test_string.resize(MIN_SIZE_FOR_QUERY, 'a');
+	auto test_word = Word{test_string};
+	CHECK(test_word.isQueryable());
+}
 //
-//TEST_CASE("Word cannot contain a space") {
-//	CHECK_THROWS_AS(Word{"hello there"}, WordContainsSpace);
-//}
-//
-//TEST_CASE("Word is queryable if greater than or equal to a specific size") {
-//	auto test_string = ""s;
-//	test_string.resize(MIN_SIZE_FOR_QUERY, 'a');
-//	auto test_word = Word{test_string};
-//	CHECK(test_word.isQueryable());
-//}
-//
-//TEST_CASE("Word is not queryable if less than a specific size") {
-//// Write this test...
-//}
+TEST_CASE("Word is not queryable if less than a specific size") {
+	SUBCASE("Letters only") {
+		auto test_string = ""s;
+		test_string.push_back('a');
+		REQUIRE(test_string.length() == 1);
+		for (auto i = 1; i < MIN_SIZE_FOR_QUERY; i++) {
+			auto test_word = Word{ test_string };
+			CHECK_FALSE(test_word.isQueryable());
+			test_string.push_back('a');
+		}
+	}
+
+	SUBCASE("With punctuation") {
+	// punctuation should NOT count towards size of word
+		auto test_string = ""s;
+		test_string.push_back('a');
+		REQUIRE(test_string.length() == 1);
+		for (auto i = 1; i < MIN_SIZE_FOR_QUERY; i++) {
+			test_string += PUNCTUATION;
+			auto test_word = Word{ test_string };
+			CHECK_FALSE(test_word.isQueryable());
+			test_string.push_back('a');
+		}
+	}
+	
+			
+	
+}
 
 // ------------- Tests for Line ----------------
 //
